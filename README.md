@@ -1,0 +1,2 @@
+# Goal-Information-Engineering
+As AI takes center stage, and data is the oil in aspirations hinged on digital transformation, model-driven engineering is heart to making software that can manage software using computational models.  This is a piece of work to generate, distribute, analyze, and use information, data, and knowledge related to understanding what GOAL is an how to realize GOAL information and data model for automation. .
