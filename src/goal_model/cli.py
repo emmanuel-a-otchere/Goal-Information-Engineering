@@ -7,7 +7,9 @@ import json
 import sys
 from pathlib import Path
 
+from .decompose import DecompositionError, LLMDecomposer, TemplateDecomposer, apply_decomposition
 from .model import GoalModel, load, load_dict
+from .planner import Planner
 from .report import full_report, goal_tree, issues_report
 from .rules import find_issues
 
@@ -110,6 +112,45 @@ def cmd_tree(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_decompose(args: argparse.Namespace) -> int:
+    model = _load(args.file)
+    decomposer = TemplateDecomposer()
+    try:
+        candidates = decomposer.decompose(model, args.goal_id)
+        result = apply_decomposition(model, args.goal_id, candidates, validate=False)
+    except DecompositionError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if args.apply:
+        out = Path(args.file)
+        backup = out.with_suffix(out.suffix + ".bak")
+        backup.write_text(out.read_text(encoding="utf-8"), encoding="utf-8")
+        out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        print(f"Applied {len(candidates)} subgoals to '{args.goal_id}' (backup at {backup})")
+        return 0
+    print(json.dumps({"goal": args.goal_id, "candidateSubgoals": candidates}, indent=2))
+    return 0
+
+
+def cmd_plan(args: argparse.Namespace) -> int:
+    model = _load(args.file)
+    planner = Planner()
+    if args.json:
+        out = {"plan": planner.plan(model).as_dict(), "progress": planner.progress(model)}
+        print(json.dumps(out, indent=2))
+        return 0
+    print("Pursuit plan (dependencies first):")
+    for step in planner.plan(model).steps:
+        marker = "READY " if step.ready else "BLOCKED"
+        blocked = f" (blocked by: {', '.join(step.blocked_by)})" if step.blocked_by else ""
+        print(f"  [{marker}] {step.goal_id}: {step.statement}{blocked}")
+    progress = planner.progress(model)
+    print(f"\nProgress: {progress['overall'] * 100:.0f}% overall")
+    for top, frac in progress["byTopLevel"].items():
+        print(f"  {top}: {frac * 100:.0f}%")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="goal",
@@ -140,6 +181,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_tree = sub.add_parser("tree", help="render the goal refinement tree")
     p_tree.add_argument("file")
     p_tree.set_defaults(func=cmd_tree)
+
+    p_dec = sub.add_parser("decompose", help="suggest candidate subgoals for a goal")
+    p_dec.add_argument("file")
+    p_dec.add_argument("goal_id")
+    p_dec.add_argument("--apply", action="store_true", help="write subgoals into the model file (a .bak backup is kept)")
+    p_dec.set_defaults(func=cmd_decompose)
+
+    p_plan = sub.add_parser("plan", help="pursuit plan and progress")
+    p_plan.add_argument("file")
+    p_plan.add_argument("--json", action="store_true")
+    p_plan.set_defaults(func=cmd_plan)
 
     return parser
 

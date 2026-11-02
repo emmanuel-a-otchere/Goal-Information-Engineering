@@ -101,3 +101,50 @@ def test_cli_entrypoint_via_python_m():
     )
     assert res.returncode == 0
     assert "VALID" in res.stdout
+
+
+def test_decompose_suggests_without_applying(tmp_path, capsys):
+    model = json.loads((EXAMPLES / "business-okr.json").read_text())
+    p = tmp_path / "m.json"
+    p.write_text(json.dumps(model))
+    assert run(["decompose", str(p), "goal-churn"]) == 0
+    out = capsys.readouterr().out
+    assert "candidateSubgoals" in out
+    # nothing written
+    assert json.loads(p.read_text()) == model
+
+
+def test_decompose_apply_writes_backup_and_subgoals(tmp_path, capsys):
+    model = json.loads((EXAMPLES / "fitness-goal.json").read_text())
+    p = tmp_path / "m.json"
+    p.write_text(json.dumps(model))
+    assert run(["decompose", str(p), "goal-nutrition", "--apply"]) == 0
+    updated = json.loads(p.read_text())
+    new_ids = {g["id"] for g in updated["goals"]} - {g["id"] for g in model["goals"]}
+    assert new_ids
+    parent = next(g for g in updated["goals"] if g["id"] == "goal-nutrition")
+    assert set(parent["subgoals"]) & new_ids
+    backup = json.loads((tmp_path / "m.json.bak").read_text())
+    assert backup == model
+
+
+def test_decompose_unknown_goal_fails(tmp_path, capsys):
+    p = tmp_path / "m.json"
+    p.write_text((EXAMPLES / "business-okr.json").read_text())
+    assert run(["decompose", str(p), "nope"]) == 1
+
+
+def test_plan_renders_ready_and_blocked(capsys):
+    assert run(["plan", str(EXAMPLES / "fitness-goal.json")]) == 0
+    out = capsys.readouterr().out
+    assert "READY" in out and "BLOCKED" in out
+    assert "blocked by: goal-base" in out
+    assert "Progress: 0%" in out
+
+
+def test_plan_json_output(capsys):
+    import json as _json
+    assert run(["plan", "--json", str(EXAMPLES / "fitness-goal.json")]) == 0
+    out = _json.loads(capsys.readouterr().out)
+    assert out["progress"]["overall"] == 0.0
+    assert any(s["goal"] == "goal-race" for s in out["plan"])
