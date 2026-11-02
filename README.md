@@ -6,11 +6,13 @@ As AI takes center stage, goal-oriented modeling is the key to software that can
 
 ## Status
 
-Early stage. Current deliverables:
+All four roadmap phases have first working versions:
 
-- [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) — the GOAL metamodel v0.1: core definition, entities, relationships, lifecycle, and machine-checkable design rules.
-- [`schema/goal.schema.json`](schema/goal.schema.json) — the authoritative JSON Schema for GOAL model instances (v0.1.0).
-- [`examples/`](examples/) — worked examples: a business OKR and a personal fitness goal, both fully valid instances of the schema.
+- **Definition** — [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) (metamodel v0.1: entities, relationships, lifecycle, design rules R1–R8) and [`schema/goal.schema.json`](schema/goal.schema.json) (the authoritative JSON Schema).
+- **Automation** — a reference Python library and CLI: schema + rules validation, tree reports, and pursuit planning. `pip install -e .` → `goal` command.
+- **Intelligence** — decomposition (`TemplateDecomposer` for deterministic, `LLMDecomposer` for LLM-assisted via an injected callable) and a `Planner` (state gaps, ready/blocked pursuit order, progress).
+- **Ecosystem** — TypeScript type bindings ([`bindings/typescript/`](bindings/typescript/)), a Sink/Source adapter framework with CSV export, and CI (Python 3.9 + 3.12).
+- [`examples/`](examples/) — a business OKR and a personal fitness goal, both fully valid instances used in CI.
 
 ## What a goal is here
 
@@ -44,19 +46,27 @@ A minimal valid GOAL model:
 }
 ```
 
-Validate any instance against the schema with [jsonschema](https://pypi.org/project/jsonschema/):
+Validate any instance against the schema with the CLI:
 
 ```bash
-pip install jsonschema check-jsonschema
-check-jsonschema --schemafile schema/goal.schema.json examples/business-okr.json
+pip install -e .            # installs the `goal` command and library
+goal validate examples/business-okr.json   # schema + rules R1-R8
+goal lint examples/business-okr.json        # includes warnings, --strict to fail on them
+goal tree examples/fitness-goal.json        # refinement forest
+goal plan examples/fitness-goal.json        # ready/blocked pursuit order + progress
+goal decompose examples/business-okr.json goal-churn   # candidate subgoals
+goal decompose examples/business-okr.json goal-churn --apply  # insert them (backup kept)
+goal export examples/fitness-goal.json -o goals.csv
+goal init my-goal-model.json               # starter model
 ```
 
 ## Roadmap
 
-- **Phase 1 — Definition** *(this repo's current focus)*: metamodel, JSON Schema, worked examples. ✅
-- **Phase 2 — Automation**: a reference Python library (`goal-model`) for validation, goal-tree queries, refinement checking, conflict/orphan detection, and a CLI (`goal init/validate/lint/report`).
-- **Phase 3 — Intelligence**: LLM-assisted goal decomposition (text → candidate subgoal tree → validated model) and a planner interface (current-state → target-state deltas).
-- **Phase 4 — Ecosystem**: interchange bindings (generated TypeScript/Python types), adapters for issue trackers, OKR tools, CI pipelines, and community scaffolding.
+- **Phase 1 — Definition** ✅ metamodel, JSON Schema, worked examples.
+- **Phase 2 — Automation** ✅ reference Python library and CLI (`validate/lint/report/tree/init/export`) implementing design rules R1–R8.
+- **Phase 3 — Intelligence** ✅ deterministic and LLM-assisted decomposition, pursuit planner with state gaps and progress.
+- **Phase 4 — Ecosystem** ✅ TypeScript bindings, Sink/Source adapter framework, CI, contributing guide.
+- **Next:** evidence objects with timestamps (verification audit trail), recurring goals, executable criteria (URLs to checkable assertions), real adapters (GitHub Issues, Linear, OKR tools), and packaging the library to PyPI.
 
 ## Positioning
 

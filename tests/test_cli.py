@@ -148,3 +148,14 @@ def test_plan_json_output(capsys):
     out = _json.loads(capsys.readouterr().out)
     assert out["progress"]["overall"] == 0.0
     assert any(s["goal"] == "goal-race" for s in out["plan"])
+
+
+def test_export_csv(tmp_path, capsys):
+    out_file = tmp_path / "goals.csv"
+    assert run(["export", str(EXAMPLES / "fitness-goal.json"), "-o", str(out_file)]) == 0
+    text = out_file.read_text()
+    assert text.startswith("id,statement")
+    assert "goal-race" in text
+    # stdout mode
+    assert run(["export", str(EXAMPLES / "fitness-goal.json")]) == 0
+    assert "id,statement" in capsys.readouterr().out

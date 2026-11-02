@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from .adapters import CsvExport
 from .decompose import DecompositionError, LLMDecomposer, TemplateDecomposer, apply_decomposition
 from .model import GoalModel, load, load_dict
 from .planner import Planner
@@ -151,6 +152,17 @@ def cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export(args: argparse.Namespace) -> int:
+    model = _load(args.file)
+    csv_out = CsvExport().export(model)
+    if args.output:
+        Path(args.output).write_text(csv_out, encoding="utf-8")
+        print(f"Wrote {args.output}")
+    else:
+        print(csv_out, end="")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="goal",
@@ -192,6 +204,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_plan.add_argument("file")
     p_plan.add_argument("--json", action="store_true")
     p_plan.set_defaults(func=cmd_plan)
+
+    p_exp = sub.add_parser("export", help="export goals to CSV")
+    p_exp.add_argument("file")
+    p_exp.add_argument("-o", "--output", help="write to a file instead of stdout")
+    p_exp.set_defaults(func=cmd_export)
 
     return parser
 

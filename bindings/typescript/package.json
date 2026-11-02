@@ -1,0 +1,13 @@
+{
+  "name": "@goal-information-engineering/goal-model-types",
+  "version": "0.1.0",
+  "description": "TypeScript type bindings for the GOAL metamodel (machine-native goal models).",
+  "types": "goal-model.d.ts",
+  "files": ["goal-model.d.ts"],
+  "keywords": ["goals", "okr", "model-driven", "requirements"],
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emmanuel-a-otchere/Goal-Information-Engineering"
+  }
+}
