@@ -131,7 +131,7 @@
           "then": { "required": ["refinement"] }
         },
         {
-          "if": { "properties": { "status": { "const": "abandoned" } } },
+          "if": { "required": ["status"], "properties": { "status": { "const": "abandoned" } } },
           "then": { "required": ["abandonReason"] }
         }
       ]
