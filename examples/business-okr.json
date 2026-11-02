@@ -1,0 +1,117 @@
+{
+  "id": "example-business-okr",
+  "name": "Q4 Product Growth OKR",
+  "version": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "description": "A business OKR expressed as a GOAL model: reduce churn through product reliability and customer success.",
+  "agents": [
+    { "id": "agent-cpo", "name": "Chief Product Officer", "type": "human" },
+    { "id": "agent-eng", "name": "Engineering Team", "type": "team" },
+    { "id": "agent-cs", "name": "Customer Success Team", "type": "team" }
+  ],
+  "states": [
+    {
+      "id": "state-current",
+      "description": "Monthly customer churn is 4.2%; NPS is 31; support backlog grows week over week.",
+      "isCurrent": true
+    },
+    {
+      "id": "state-target-q4",
+      "description": "Monthly churn is at or below 2.5% and NPS is at or above 45."
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-churn",
+      "statement": "Reduce monthly customer churn from 4.2% to at most 2.5% by end of Q4.",
+      "targetState": "state-target-q4",
+      "successCriteria": [
+        {
+          "description": "Churn dashboard reports monthly churn <= 2.5% for the final month of Q4.",
+          "evidence": "https://metrics.internal/churn?window=monthly",
+          "verification": "automated"
+        }
+      ],
+      "priority": "critical",
+      "status": "active",
+      "owner": "agent-cpo",
+      "contributors": ["agent-eng", "agent-cs"],
+      "deadline": "2025-12-31",
+      "subgoals": ["goal-reliability", "goal-onboarding"],
+      "refinement": "or",
+      "constraints": ["constraint-headcount"]
+    },
+    {
+      "id": "goal-reliability",
+      "statement": "Resolve the top five causes of customer-reported reliability complaints.",
+      "successCriteria": [
+        {
+          "description": "Each of the top 5 complaint causes from Q3 analysis has a closed ticket with a verified fix.",
+          "evidence": "Jira epics CHURN-1 through CHURN-5",
+          "verification": "manual"
+        },
+        {
+          "description": "Product uptime for the quarter is at least 99.9%.",
+          "evidence": "Status page quarterly report",
+          "verification": "automated"
+        }
+      ],
+      "priority": "high",
+      "status": "active",
+      "owner": "agent-eng",
+      "dependsOn": ["goal-onboarding"],
+      "subgoals": [],
+      "refinement": "and"
+    },
+    {
+      "id": "goal-metrics-fix",
+      "statement": "Deduplicate customer records in the churn data pipeline.",
+      "successCriteria": [
+        {
+          "description": "Data quality check reports zero duplicate customer records for two consecutive weekly runs.",
+          "evidence": "https://metrics.internal/data-quality",
+          "verification": "automated"
+        }
+      ],
+      "priority": "high",
+      "status": "active",
+      "owner": "agent-eng",
+      "deadline": "2025-09-30"
+    },
+    {
+      "id": "goal-onboarding",
+      "statement": "Every new customer completes guided onboarding within 14 days of signup.",
+      "successCriteria": [
+        {
+          "description": "At least 85% of cohorts signing up in Q4 finish onboarding within 14 days.",
+          "evidence": "Product analytics onboarding funnel report",
+          "verification": "automated"
+        }
+      ],
+      "priority": "high",
+      "status": "active",
+      "owner": "agent-cs",
+      "contributors": ["agent-eng"]
+    }
+  ],
+  "obstacles": [
+    {
+      "id": "obstacle-data-quality",
+      "description": "Churn metrics rely on a data pipeline with known duplication issues, risking miscounted churn.",
+      "threatens": "goal-churn",
+      "mitigation": "goal-metrics-fix"
+    },
+    {
+      "id": "obstacle-hiring-freeze",
+      "description": "Company-wide hiring freeze limits engineering capacity for reliability work.",
+      "threatens": ["goal-reliability", "goal-onboarding"]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-headcount",
+      "description": "No net-new hires before January.",
+      "kind": "resource"
+    }
+  ]
+}
