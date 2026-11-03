@@ -24,3 +24,12 @@ jobs:
         run: |
           goal validate examples/business-okr.json
           goal validate examples/fitness-goal.json
+      - name: Smoke-test the operations layer (CLI)
+        run: |
+          cp examples/fitness-goal.json /tmp/ops-model.json
+          STORE=/tmp/ops-store
+          goal agent register --store $STORE --id agent-runner --name "The Runner" --type human
+          goal accept /tmp/ops-model.json --store $STORE --agent agent-runner --goal goal-base
+          goal event /tmp/ops-model.json --store $STORE --agent agent-runner --goal goal-base --action "long run"
+          goal assess /tmp/ops-model.json --store $STORE --goal goal-base --evidence "0=app export wk1-4"
+          goal dashboard /tmp/ops-model.json --store $STORE --json | grep -q '"overallProgress"'
