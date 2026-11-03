@@ -1,6 +1,6 @@
 # Goal-Information-Engineering
 
-**A machine-native model for goals: what a goal *is*, how goals relate to agents, states, obstacles, and each other — expressed as a strict, versioned data model that software can validate, query, decompose, and act on.**
+**A machine-native model for goals: what a goal *is*, how goals relate to agents, states, obstacles, and each other, expressed as a strict, versioned data model that software can validate, query, decompose, and act on.**
 
 As AI takes center stage, goal-oriented modeling is the key to software that can manage software. Existing goal-modeling traditions (KAOS, i*, GRL, OKRs) are human-drawn and human-read; this project turns the same ideas into computational models — information, data, and knowledge about goals that agents, planners, and automation can use directly.
 
