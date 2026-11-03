@@ -21,6 +21,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Protocol
 
 from .interface import goal_type_of
+from .model import evaluate_target, find_metric_record
 from .telemetry import EVENT_CONSTRAINT_VIOLATED, EVENT_GOAL_ASSESSED, utcnow_iso
 
 VERDICT_ACHIEVED = "achieved"
@@ -43,6 +44,8 @@ class CriterionResult:
     verdict: str
     evidence: Optional[Any] = None
     note: str = ""
+    metric: Optional[str] = None
+    measurement: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -51,6 +54,8 @@ class CriterionResult:
             "verdict": self.verdict,
             "evidence": self.evidence,
             "note": self.note,
+            "metric": self.metric,
+            "measurement": self.measurement,
         }
 
 
@@ -101,6 +106,8 @@ class Assessment:
                     verdict=c.get("verdict", CRITERION_UNVERIFIED),
                     evidence=c.get("evidence"),
                     note=c.get("note", ""),
+                    metric=c.get("metric"),
+                    measurement=c.get("measurement"),
                 )
                 for c in raw.get("criteria", [])
             ],
@@ -129,6 +136,51 @@ def _verdict_of(ev: Any) -> str:
     if isinstance(ev, dict) and "pass" in ev:
         return CRITERION_PASS if ev["pass"] else CRITERION_FAIL
     return CRITERION_PASS
+
+
+def _measurement_of(ev: Any) -> Optional[float]:
+    """A numeric evidence value is a raw measurement for a metric-referenced criterion."""
+    if ev is None or isinstance(ev, bool):
+        return None
+    if isinstance(ev, (int, float)):
+        return float(ev)
+    if isinstance(ev, str):
+        try:
+            return float(ev)
+        except ValueError:
+            return None
+    if isinstance(ev, dict):
+        v = ev.get("value")
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+    return None
+
+
+def _metric_verdict(c, ev: Any) -> tuple:
+    """Evaluate a metric-referenced criterion with a target against a measurement.
+
+    Returns (verdict, note, measurement). Falls back to explicit pass/fail
+    evidence when the evidence is not numeric.
+    """
+    measurement = _measurement_of(ev)
+    if measurement is None:
+        verdict = _verdict_of(ev)
+        note = "" if verdict != CRITERION_UNVERIFIED else "no evidence supplied"
+        return verdict, note, None
+    ok = evaluate_target(c.target, measurement)
+    verdict = CRITERION_PASS if ok else CRITERION_FAIL
+    rec = find_metric_record(c.metric)
+    ref = f"{c.metric.get('id')}@{c.metric.get('version')}"
+    dir_part = f", {rec.get('directionality')}" if rec and rec.get("directionality") else ""
+    unit = c.target.get("unit") or (rec.get("unit") if rec else "") or ""
+    note = (
+        f"measured {measurement} vs {c.target.get('operator')} {c.target.get('value')} "
+        f"{unit} ({ref}{dir_part})".strip()
+    )
+    ev_unit = ev.get("unit") if isinstance(ev, dict) else None
+    if ev_unit and rec and rec.get("unit") and str(ev_unit).lower() != str(rec["unit"]).lower():
+        note += f"; unit '{ev_unit}' mismatches metric unit '{rec['unit']}'"
+    return verdict, note, measurement
 
 
 def _parse_ts(ts: str) -> Optional[datetime]:
@@ -173,8 +225,15 @@ class StandardAssessor:
         criteria: List[CriterionResult] = []
         for i, c in enumerate(goal.success_criteria):
             ev = _evidence_for(evidence, c.description, i)
-            verdict = _verdict_of(ev)
-            note = "" if verdict != CRITERION_UNVERIFIED else "no evidence supplied"
+            metric_id = c.metric.get("id") if c.metric else None
+            if c.metric and c.target:
+                verdict, note, measurement = _metric_verdict(c, ev)
+            else:
+                verdict = _verdict_of(ev)
+                measurement = None
+                note = "" if verdict != CRITERION_UNVERIFIED else "no evidence supplied"
+                if c.metric and not c.target and verdict == CRITERION_UNVERIFIED:
+                    note = "metric referenced but no target; add a target or supply pass/fail evidence"
             criteria.append(
                 CriterionResult(
                     description=c.description,
@@ -182,6 +241,8 @@ class StandardAssessor:
                     verdict=verdict,
                     evidence=ev,
                     note=note,
+                    metric=metric_id,
+                    measurement=measurement,
                 )
             )
 

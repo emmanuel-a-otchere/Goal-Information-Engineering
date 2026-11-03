@@ -69,6 +69,7 @@ goal agent register --store .goal-ops --id agent-runner --name "The Runner" --ty
 goal accept examples/fitness-goal.json --store .goal-ops --agent agent-runner --goal goal-base
 goal event examples/fitness-goal.json --store .goal-ops --agent agent-runner --goal goal-base --action "long run"
 goal assess examples/fitness-goal.json --store .goal-ops --goal goal-base --evidence "0=app export wk1-4"
+goal assess examples/business-okr.json --store .goal-ops --goal goal-churn --evidence "0=97.6"  # measured retention vs the dea-catalog-metrics target
 goal dashboard examples/fitness-goal.json --store .goal-ops   # text dashboard; --json for the metrics API
 goal serve examples/fitness-goal.json --store .goal-ops       # http://127.0.0.1:8377/ (loopback only)
 ```

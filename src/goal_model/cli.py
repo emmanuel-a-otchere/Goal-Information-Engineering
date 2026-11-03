@@ -436,7 +436,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_store(p_ass)
     p_ass.add_argument("--goal", required=True)
     p_ass.add_argument("--goal-type", help="override the goal's declared type for assessor dispatch")
-    p_ass.add_argument("--evidence", action="append", help="criterion evidence as key=value (repeatable)")
+    p_ass.add_argument("--evidence", action="append", help="criterion evidence as key=value (repeatable); a numeric value is a measurement evaluated against the criterion's metric target")
     p_ass.set_defaults(func=cmd_assess)
 
     p_dash = sub.add_parser("dashboard", help="render the operations dashboard (activities, performance, adherence)")
