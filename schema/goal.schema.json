@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/emmanuel-a-otchere/Goal-Information-Engineering/main/schema/goal.schema.json",
+  "title": "GOAL Model v0.1",
+  "description": "Machine-native goal model: goals, agents, states, obstacles, constraints, and their relationships. See docs/GOAL-METAMODEL.md.",
+  "type": "object",
+  "required": ["id", "name", "version", "agents", "goals"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "description": { "type": "string" },
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "Metamodel version this instance conforms to."
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/agent" }
+    },
+    "states": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/state" }
+    },
+    "goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/goal" }
+    },
+    "obstacles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/obstacle" }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/constraint" }
+    }
+  },
+  "$defs": {
+    "agent": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["human", "team", "organization", "system"] },
+        "contact": { "type": "string" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "isCurrent": { "type": "boolean", "default": false }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "evidence": {
+          "type": "string",
+          "description": "Where or how to check this criterion (URL, query, artifact, procedure)."
+        },
+        "verification": { "enum": ["manual", "automated"], "default": "manual" }
+      }
+    },
+    "goal": {
+      "type": "object",
+      "required": ["id", "statement", "owner"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A statement of the desired state of the world, e.g. 'Every release passes the security gate.'"
+        },
+        "targetState": {
+          "type": "string",
+          "description": "Reference to a State id in this model."
+        },
+        "successCriteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/criterion" }
+        },
+        "priority": { "enum": ["critical", "high", "medium", "low"] },
+        "status": {
+          "enum": ["proposed", "active", "achieved", "abandoned"],
+          "default": "proposed"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Reference to an Agent id in this model. At least one owner is required (R5)."
+        },
+        "contributors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to Agent ids."
+        },
+        "deadline": { "type": "string", "format": "date" },
+        "subgoals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to Goal ids."
+        },
+        "refinement": {
+          "enum": ["and", "or"],
+          "description": "How subgoals combine: 'and' = all must be satisfied; 'or' = at least one. Required when subgoals is non-empty."
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to Goal ids that must be achieved first."
+        },
+        "abandonReason": { "type": "string" },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "References to Constraint ids limiting how this goal may be pursued."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["subgoals"], "properties": { "subgoals": { "minItems": 1 } } },
+          "then": { "required": ["refinement"] }
+        },
+        {
+          "if": { "required": ["status"], "properties": { "status": { "const": "abandoned" } } },
+          "then": { "required": ["abandonReason"] }
+        }
+      ]
+    },
+    "obstacle": {
+      "type": "object",
+      "required": ["id", "description", "threatens"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "threatens": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          ],
+          "description": "Goal id or goal ids threatened by this obstacle."
+        },
+        "mitigation": {
+          "type": "string",
+          "description": "Reference to a Goal id that mitigates this obstacle."
+        }
+      }
+    },
+    "constraint": {
+      "type": "object",
+      "required": ["id", "description", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["budget", "time", "resource", "policy", "other"] }
+      }
+    }
+  }
+}

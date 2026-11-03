@@ -1,0 +1,138 @@
+{
+  "id": "example-fitness-goal",
+  "name": "Half Marathon Preparation",
+  "version": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "description": "A personal goal expressed as a GOAL model: complete a half marathon in under 2 hours.",
+  "agents": [
+    { "id": "agent-runner", "name": "The Runner", "type": "human" },
+    { "id": "agent-coach", "name": "Training Plan App", "type": "system" }
+  ],
+  "states": [
+    {
+      "id": "state-current",
+      "description": "The runner completes 5 km in about 32 minutes and has never run more than 10 km.",
+      "isCurrent": true
+    },
+    {
+      "id": "state-race-day",
+      "description": "The runner finishes a certified half marathon course in under 2 hours."
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-race",
+      "statement": "Complete a half marathon in under 2 hours.",
+      "targetState": "state-race-day",
+      "successCriteria": [
+        {
+          "description": "Official race results show a finish time under 02:00:00.",
+          "evidence": "Official timing certificate",
+          "verification": "manual"
+        }
+      ],
+      "priority": "critical",
+      "status": "active",
+      "owner": "agent-runner",
+      "deadline": "2026-04-19",
+      "subgoals": ["goal-base", "goal-build", "goal-taper", "goal-nutrition"],
+      "refinement": "and",
+      "constraints": ["constraint-time", "constraint-injury"]
+    },
+    {
+      "id": "goal-strength",
+      "statement": "Complete two strength training sessions per week for the entire training block.",
+      "successCriteria": [
+        {
+          "description": "Training log shows >= 2 strength sessions in at least 90% of training weeks.",
+          "evidence": "Training log export",
+          "verification": "automated"
+        }
+      ],
+      "priority": "medium",
+      "status": "active",
+      "owner": "agent-runner",
+      "contributors": ["agent-coach"]
+    },
+    {
+      "id": "goal-base",
+      "statement": "Build a base of running 25 km per week for 4 consecutive weeks without injury.",
+      "successCriteria": [
+        {
+          "description": "Running app logs >= 25 km in each of 4 consecutive weeks.",
+          "evidence": "Training log export",
+          "verification": "automated"
+        }
+      ],
+      "priority": "high",
+      "status": "active",
+      "owner": "agent-runner",
+      "contributors": ["agent-coach"]
+    },
+    {
+      "id": "goal-build",
+      "statement": "Complete one 18 km long run at target race pace minus 30 seconds per km.",
+      "successCriteria": [
+        {
+          "description": "A logged run of >= 18 km at average pace <= 5:40 min/km.",
+          "evidence": "GPS run log",
+          "verification": "automated"
+        }
+      ],
+      "priority": "high",
+      "status": "proposed",
+      "owner": "agent-runner",
+      "dependsOn": ["goal-base"]
+    },
+    {
+      "id": "goal-taper",
+      "statement": "Reduce weekly volume to under 15 km in the final two weeks before race day.",
+      "successCriteria": [
+        {
+          "description": "Training log shows weekly totals under 15 km for the two weeks preceding the race.",
+          "evidence": "Training log export",
+          "verification": "automated"
+        }
+      ],
+      "priority": "medium",
+      "status": "proposed",
+      "owner": "agent-runner",
+      "dependsOn": ["goal-build"]
+    },
+    {
+      "id": "goal-nutrition",
+      "statement": "Establish a fueling strategy that avoids hitting the wall after 15 km.",
+      "successCriteria": [
+        {
+          "description": "At least three long runs completed using a consistent fueling plan with no reported energy crash.",
+          "evidence": "Run notes attached to training log entries",
+          "verification": "manual"
+        }
+      ],
+      "priority": "medium",
+      "status": "proposed",
+      "owner": "agent-runner",
+      "contributors": ["agent-coach"]
+    }
+  ],
+  "obstacles": [
+    {
+      "id": "obstacle-injury",
+      "description": "History of knee pain when weekly volume exceeds 30 km.",
+      "threatens": "goal-race",
+      "mitigation": "goal-strength"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "constraint-time",
+      "description": "No more than 6 hours per week available for training.",
+      "kind": "time"
+    },
+    {
+      "id": "constraint-injury",
+      "description": "Stop increasing volume immediately if knee pain persists more than 2 days.",
+      "kind": "policy"
+    }
+  ]
+}
