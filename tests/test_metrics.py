@@ -67,3 +67,57 @@ def test_metrics_after_achieved_goal_has_no_deadline_risk(tmp_path):
     m = ctx.metrics()
     assert m["goals"]["g2"]["deadlineRiskDays"] is None
     assert m["totals"]["byStatus"]["achieved"] == 1
+
+
+# -- metric criteria in the dashboard read-model ---------------------------
+
+METRIC_CRITERION = {
+    "description": "Monthly retention >= 97.5%",
+    "verification": "automated",
+    "metric": {
+        "catalog": "dea-catalog-metrics",
+        "id": "dea:metric-customer-retention-rate",
+        "version": "1.2.0",
+    },
+    "target": {"operator": ">=", "value": 97.5, "unit": "percent"},
+}
+
+
+def metric_model_ctx(tmp_path):
+    raw = copy.deepcopy(BASE)
+    raw["goals"][1]["successCriteria"] = [copy.deepcopy(METRIC_CRITERION)]
+    return make_ctx(tmp_path, raw=raw, agents=[AGENT])
+
+
+def test_metrics_expose_metric_criteria_with_latest_measurement(tmp_path):
+    ctx = metric_model_ctx(tmp_path)
+    m = ctx.metrics()
+    mc = m["goals"]["g2"]["metricCriteria"]
+    assert len(mc) == 1
+    assert mc[0]["metric"] == "dea:metric-customer-retention-rate"
+    assert mc[0]["catalog"] == "dea-catalog-metrics"
+    assert mc[0]["version"] == "1.2.0"
+    assert mc[0]["target"] == {"operator": ">=", "value": 97.5, "unit": "percent"}
+    assert "latestVerdict" not in mc[0]
+    assert m["goals"]["g1"]["metricCriteria"] == []
+
+    assess_goal(ctx, "g2", evidence={"0": "97.6"})
+    m = ctx.metrics()
+    mc = m["goals"]["g2"]["metricCriteria"][0]
+    assert mc["latestVerdict"] == "pass"
+    assert mc["latestMeasurement"] == 97.6
+
+
+def test_dashboard_renderers_show_metric_criteria(tmp_path):
+    from goal_model.dashboard import render_dashboard_html, render_dashboard_text
+
+    ctx = metric_model_ctx(tmp_path)
+    assess_goal(ctx, "g2", evidence={"0": "97.6"})
+    m = ctx.metrics()
+    txt = render_dashboard_text(m)
+    assert "dea:metric-customer-retention-rate@1.2.0" in txt
+    assert "target >= 97.5 percent" in txt
+    assert "measured 97.6" in txt
+    page = render_dashboard_html(m)
+    assert "dea:metric-customer-retention-rate@1.2.0" in page
+    assert "Metric criteria" in page

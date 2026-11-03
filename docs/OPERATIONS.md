@@ -161,6 +161,11 @@ local pointer registry (`schema/metric-registry.json`, sourced from
 `CriterionResult` also persists `metric` and `measurement` for the audit
 trail. Explicit boolean/`{"pass": ...}` evidence still overrides.
 
+The dashboard read-model (`GET /api/metrics`, `goal dashboard`) exposes each
+goal's `metricCriteria` — catalog, record id, pinned version, target, and the
+latest assessed verdict/measurement — rendered in both the text and HTML
+dashboards.
+
 ## 4. CLI reference
 
 ```bash

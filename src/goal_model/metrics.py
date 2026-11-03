@@ -37,6 +37,23 @@ def compute_metrics(ctx) -> Dict[str, Any]:
         if g.deadline and g.status not in ("achieved", "abandoned"):
             risk = (date.fromisoformat(g.deadline) - today).days
         la = latest_assessment.get(gid)
+        la_criteria = la.get("criteria", []) if la else []
+        metric_criteria = []
+        for i, c in enumerate(g.success_criteria):
+            if not c.metric:
+                continue
+            entry: Dict[str, Any] = {
+                "index": i,
+                "catalog": c.metric.get("catalog"),
+                "metric": c.metric.get("id"),
+                "version": c.metric.get("version"),
+            }
+            if c.target:
+                entry["target"] = c.target
+            if i < len(la_criteria):
+                entry["latestVerdict"] = la_criteria[i].get("verdict")
+                entry["latestMeasurement"] = la_criteria[i].get("measurement")
+            metric_criteria.append(entry)
         goals[gid] = {
             "statement": g.statement,
             "owner": g.owner,
@@ -48,6 +65,7 @@ def compute_metrics(ctx) -> Dict[str, Any]:
             "blockedBy": list(step.blocked_by) if step else [],
             "activities": len(goal_events),
             "lastActivityAt": goal_events[-1].ts if goal_events else None,
+            "metricCriteria": metric_criteria,
             "latestAssessment": (
                 {
                     "verdict": la["verdict"],

@@ -76,7 +76,13 @@
         {
           "description": "Data quality check reports zero duplicate customer records for two consecutive weekly runs.",
           "evidence": "https://metrics.internal/data-quality",
-          "verification": "automated"
+          "verification": "automated",
+          "metric": {
+            "catalog": "dea-catalog-metrics",
+            "id": "dea:metric-data-completeness",
+            "version": "1.2.0"
+          },
+          "target": { "operator": "==", "value": 100, "unit": "percent" }
         }
       ],
       "priority": "high",

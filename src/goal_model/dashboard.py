@@ -10,6 +10,25 @@ def _pct(x):
     return "-" if x is None else f"{x * 100:.0f}%"
 
 
+def _metric_criteria_txt(g: Dict[str, Any]) -> str:
+    """Compact one-line rendering of a goal's metric-referenced criteria."""
+    parts = []
+    for mc in g.get("metricCriteria", []):
+        t = mc.get("target") or {}
+        tgt = ""
+        if t:
+            tgt = " ".join(
+                f"target {t.get('operator')} {t.get('value')} {t.get('unit') or ''}".split()
+            )
+        latest = ""
+        if mc.get("latestVerdict"):
+            latest = f" | latest: {mc['latestVerdict']}"
+            if mc.get("latestMeasurement") is not None:
+                latest += f" (measured {mc['latestMeasurement']})"
+        parts.append(f"{mc['metric']}@{mc.get('version')} {tgt}{latest}".rstrip())
+    return "; ".join(parts) or "-"
+
+
 def render_dashboard_text(m: Dict[str, Any]) -> str:
     lines = [
         f"GOAL operations dashboard - {m['model']['name']} (model {m['model']['id']} v{m['model']['version']})",
@@ -46,6 +65,8 @@ def render_dashboard_text(m: Dict[str, Any]) -> str:
             f"\n      owner={g['owner']} priority={g['priority'] or '-'} {state} {risk} | "
             f"activities={g['activities']} | {assess}"
         )
+        if g.get("metricCriteria"):
+            lines.append(f"      metric criteria: {_metric_criteria_txt(g)}")
     lines += ["", "Recent events:"]
     if not m["recentEvents"]:
         lines.append("  (none)")
@@ -138,6 +159,7 @@ def render_dashboard_html(m: Dict[str, Any]) -> str:
                 state,
                 risk,
                 str(g["activities"]),
+                e(_metric_criteria_txt(g)),
                 assess,
             ]
         )
@@ -156,7 +178,7 @@ def render_dashboard_html(m: Dict[str, Any]) -> str:
             agent_rows,
         ),
         goals_table=_table(
-            ["Goal", "Statement", "Status", "Owner", "Readiness", "Deadline risk", "Activities", "Latest assessment"],
+            ["Goal", "Statement", "Status", "Owner", "Readiness", "Deadline risk", "Activities", "Metric criteria", "Latest assessment"],
             goal_rows,
         ),
         events_table=_table(["Time", "Event", "Agent", "Goal"], event_rows),
