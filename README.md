@@ -1,4 +1,4 @@
-# Goal-Information-Engineering
+# Goal Information Engineering
 
 **A machine-native model for goals: what a goal *is*, how goals relate to agents, states, obstacles, and each other, expressed as a strict, versioned data model that software can validate, query, decompose, and act on.**
 
