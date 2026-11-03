@@ -124,3 +124,102 @@ def test_assess_unknown_goal_raises(tmp_path):
     ctx = make_ctx(tmp_path, agents=[AGENT])
     with pytest.raises(AssessmentError):
         assess_goal(ctx, "nope")
+
+
+# -- metric-referenced criteria (dea-catalog-metrics pointer registry) -------
+
+CRR_CRITERION = {
+    "description": "Monthly retention >= 97.5%",
+    "verification": "automated",
+    "metric": {
+        "catalog": "dea-catalog-metrics",
+        "id": "dea:metric-customer-retention-rate",
+        "version": "1.2.0",
+    },
+    "target": {"operator": ">=", "value": 97.5, "unit": "percent"},
+}
+
+
+def metric_ctx(tmp_path, criterion=CRR_CRITERION):
+    raw = copy.deepcopy(BASE)
+    raw["goals"][1]["successCriteria"] = [criterion]
+    return make_ctx(tmp_path, raw=raw, agents=[AGENT])
+
+
+def test_metric_criterion_measurement_pass(tmp_path):
+    ctx = metric_ctx(tmp_path)
+    a = assess_goal(ctx, "g2", evidence={"0": "97.6"})
+    c = a.criteria[0]
+    assert c.verdict == "pass"
+    assert c.metric == "dea:metric-customer-retention-rate"
+    assert c.measurement == 97.6
+    assert "97.6" in c.note and "higher_is_better" in c.note
+    assert a.verdict == "achieved" and a.score == 1.0
+
+
+def test_metric_criterion_measurement_fail(tmp_path):
+    ctx = metric_ctx(tmp_path)
+    a = assess_goal(ctx, "g2", evidence={0: 90.0})
+    assert a.criteria[0].verdict == "fail"
+    assert a.criteria[0].measurement == 90.0
+    assert a.verdict == "not_achieved" and a.score == 0.0
+
+
+def test_metric_criterion_dict_value_and_unit_mismatch_note(tmp_path):
+    ctx = metric_ctx(tmp_path)
+    a = assess_goal(ctx, "g2", evidence={"0": {"value": 98.0, "unit": "ratio"}})
+    c = a.criteria[0]
+    assert c.verdict == "pass" and c.measurement == 98.0
+    assert "mismatches metric unit" in c.note
+
+
+def test_metric_criterion_band_target(tmp_path):
+    crit = copy.deepcopy(CRR_CRITERION)
+    crit["target"] = {"operator": "band", "value": [97.0, 99.0], "unit": "percent"}
+    ctx = metric_ctx(tmp_path, crit)
+    assert assess_goal(ctx, "g2", evidence={"0": 98.2}).criteria[0].verdict == "pass"
+    assert assess_goal(ctx, "g2", evidence={"0": 96.0}).criteria[0].verdict == "fail"
+
+
+def test_metric_criterion_without_target_falls_back_to_evidence(tmp_path):
+    crit = copy.deepcopy(CRR_CRITERION)
+    crit.pop("target")
+    ctx = metric_ctx(tmp_path, crit)
+    a = assess_goal(ctx, "g2", evidence={"0": True})
+    assert a.criteria[0].verdict == "pass"
+    b = assess_goal(ctx, "g2")
+    assert b.criteria[0].verdict == "unverified" and "no target" in b.criteria[0].note
+
+
+def test_metric_assessment_persists_round_trip(tmp_path):
+    ctx = metric_ctx(tmp_path)
+    assess_goal(ctx, "g2", evidence={"0": "97.6"})
+    stored = ctx.store.load_assessments()
+    assert stored[0]["criteria"][0]["metric"] == "dea:metric-customer-retention-rate"
+    assert stored[0]["criteria"][0]["measurement"] == 97.6
+    assert Assessment.from_dict(stored[0]).to_dict() == stored[0]
+
+
+def test_evaluate_target_operators():
+    from goal_model.model import evaluate_target
+
+    assert evaluate_target({"operator": ">=", "value": 97.5}, 97.5)
+    assert not evaluate_target({"operator": ">", "value": 97.5}, 97.5)
+    assert evaluate_target({"operator": "<=", "value": 2.5}, 2.5)
+    assert not evaluate_target({"operator": "<", "value": 2.5}, 2.5)
+    assert evaluate_target({"operator": "==", "value": 100}, 100)
+    assert evaluate_target({"operator": "band", "value": [1, 2]}, 1.5)
+    assert not evaluate_target({"operator": "band", "value": [1, 2]}, 3)
+    assert not evaluate_target({"operator": "band", "value": "x"}, 1)
+
+
+def test_find_metric_record_resolves_pointer_registry():
+    from goal_model.model import find_metric_record
+
+    rec = find_metric_record(
+        {"catalog": "dea-catalog-metrics", "id": "dea:metric-mean-time-to-recovery"}
+    )
+    assert rec and rec["directionality"] == "lower_is_better" and rec["unit"] == "minute"
+    assert find_metric_record({"catalog": "dea-catalog-metrics", "id": "dea:metric-nope"}) is None
+    assert find_metric_record({"catalog": "other", "id": "x"}) is None
+    assert find_metric_record(None) is None

@@ -78,5 +78,5 @@ The metamodel is versioned semantically. v0.1 is intentionally minimal (the enti
 - Evidence objects with timestamps and sources (audit trail of verification).
 - Probabilistic goal satisfaction (confidence, likelihood).
 - Recurring goals (habits, SLAs) with cadence definitions.
-- Executable criteria (URLs to CI jobs, queries, or assertions a machine can run directly).
+- Executable criteria (URLs to CI jobs, queries, or assertions a machine can run directly). Partially landed: criteria with a `metric` reference and a `target` are evaluated against measured values during assessment (see `docs/OPERATIONS.md`).
 - An LLM-assisted decomposition interface (text → candidate subgoal tree → validated model).

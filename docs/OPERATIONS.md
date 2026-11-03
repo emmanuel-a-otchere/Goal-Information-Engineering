@@ -150,6 +150,17 @@ days active), an overall `verdict` (`achieved|partial|not_achieved`) and a
 Evidence is keyed by criterion description or by zero-based index
 (`{"0": "..."}` is robust for descriptions containing `=`).
 
+When a criterion carries a `metric` reference and a `target` (metamodel v0.2,
+rule R9), a **numeric** evidence value is treated as a measurement and
+evaluated mechanically against the target (`<`, `<=`, `>`, `>=`, `==`,
+`band`), e.g. `goal assess model.json --store .goal-ops --goal goal-churn
+--evidence "0=97.6"`. The criterion verdict note records the measured value,
+the target, and the resolved catalog record with its directionality from the
+local pointer registry (`schema/metric-registry.json`, sourced from
+[dea-catalog-metrics](https://github.com/technehub-labs/dea-catalog-metrics));
+`CriterionResult` also persists `metric` and `measurement` for the audit
+trail. Explicit boolean/`{"pass": ...}` evidence still overrides.
+
 ## 4. CLI reference
 
 ```bash

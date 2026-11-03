@@ -170,6 +170,45 @@ def load_metric_registry() -> Dict[str, Any]:
         return json.load(fh)
 
 
+def find_metric_record(ref: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Resolve a criterion.metric reference against the local pointer registry.
+
+    Returns the record (unit, unit_ref, directionality, version, ...) or None
+    when the catalog or record is not in the local registry.
+    """
+    if not ref:
+        return None
+    for r in load_metric_registry().get("records", []):
+        if r.get("catalog") == ref.get("catalog") and r.get("id") == ref.get("id"):
+            return r
+    return None
+
+
+def evaluate_target(target: Dict[str, Any], value: float) -> bool:
+    """Evaluate a criterion target against a measured value.
+
+    Operators: '<', '<=', '>', '>=', '==' compare value to target['value'];
+    'band' requires a [low, high] pair and tests low <= value <= high.
+    """
+    op = target.get("operator")
+    t = target.get("value")
+    if op == "band":
+        if isinstance(t, (list, tuple)) and len(t) == 2:
+            return float(t[0]) <= value <= float(t[1])
+        return False
+    if op == "<":
+        return value < t
+    if op == "<=":
+        return value <= t
+    if op == ">":
+        return value > t
+    if op == ">=":
+        return value >= t
+    if op == "==":
+        return value == t
+    return False
+
+
 def load(path: str | Path) -> GoalModel:
     """Load a GOAL model from a JSON file."""
     with open(path, "r", encoding="utf-8") as fh:
