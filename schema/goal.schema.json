@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/emmanuel-a-otchere/Goal-Information-Engineering/main/schema/goal.schema.json",
-  "title": "GOAL Model v0.1",
+  "title": "GOAL Model v0.2",
   "description": "Machine-native goal model: goals, agents, states, obstacles, constraints, and their relationships. See docs/GOAL-METAMODEL.md.",
   "type": "object",
   "required": ["id", "name", "version", "agents", "goals"],
@@ -11,9 +11,9 @@
     "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "description": { "type": "string" },
     "schemaVersion": {
-      "type": "string",
-      "const": "0.1.0",
-      "description": "Metamodel version this instance conforms to."
+      "enum": ["0.1.0", "0.2.0"],
+      "default": "0.1.0",
+      "description": "Metamodel version this instance conforms to. 0.2.0 adds optional criterion.metric and criterion.target plus design rule R9 (backwards-compatible)."
     },
     "agents": {
       "type": "array",
@@ -67,8 +67,37 @@
           "type": "string",
           "description": "Where or how to check this criterion (URL, query, artifact, procedure)."
         },
-        "verification": { "enum": ["manual", "automated"], "default": "manual" }
-      }
+        "verification": { "enum": ["manual", "automated"], "default": "manual" },
+        "metric": {
+          "type": "object",
+          "description": "Reference to a canonical performance-metric record (e.g. dea-catalog-metrics) that defines what is measured, its formula, unit, and directionality. Records are referenced, never copied.",
+          "required": ["catalog", "id", "version"],
+          "properties": {
+            "catalog": { "type": "string", "minLength": 1, "description": "Catalog name, e.g. 'dea-catalog-metrics'." },
+            "id": { "type": "string", "minLength": 1, "description": "Metric record id, e.g. 'dea:metric-customer-retention-rate'." },
+            "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Pinned record version (semver)." }
+          }
+        },
+        "target": {
+          "type": "object",
+          "description": "Goal-specific target value for the referenced metric: the value this goal demands. The catalog record defines how a value is read; the criterion defines the value the goal requires.",
+          "required": ["operator", "value"],
+          "properties": {
+            "operator": { "enum": ["<", "<=", ">", ">=", "==", "band"], "description": "'band' targets a [low, high] range." },
+            "value": { "type": ["number", "string", "array"], "description": "Numeric threshold, categorical value, or [low, high] pair when operator is 'band'." },
+            "unit": { "type": "string", "description": "Must match the referenced metric record's unit (enforced by rule R9)." }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["operator"], "properties": { "operator": { "const": "band" } } },
+              "then": { "properties": { "value": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } } }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        { "if": { "required": ["target"] }, "then": { "required": ["metric"] } }
+      ]
     },
     "goal": {
       "type": "object",

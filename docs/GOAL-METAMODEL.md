@@ -25,7 +25,7 @@ Three consequences of this definition drive the model:
 | `Agent` | Any human, team, organization, or software system that can own or contribute to goals. | `id`, `name`, `type` (`human` \| `team` \| `organization` \| `system`) |
 | `State` | A described situation of the world, current or target. | `id`, `description`, `isCurrent` |
 | `Obstacle` | A condition that threatens or blocks goal achievement. | `id`, `threatens` (goal ref), `description`, `mitigation` (goal ref, optional) |
-| `Criterion` | One checkable condition of success. | `description`, `evidence` (where/how to check), `verification` (`manual` \| `automated`) |
+| `Criterion` | One checkable condition of success. | `description`, `evidence` (where/how to check), `verification` (`manual` \| `automated`), optional `metric` (catalog/id/version reference to a canonical metric record, e.g. [dea-catalog-metrics](https://github.com/technehub-labs/dea-catalog-metrics)) + `target` (`operator`/`value`/`unit` — the value this goal demands) |
 | `Constraint` | A hard limit on how a goal may be pursued. | `description`, `kind` (`budget` \| `time` \| `resource` \| `policy` \| `other`) |
 
 ## 4. Core relationships
@@ -57,6 +57,7 @@ These are the rules the reference tooling (planned) will enforce:
 6. **R6 — Deadline sanity.** A goal's deadline, if set, must not precede the deadlines of goals that depend on it being achieved first (where declared).
 7. **R7 — Orphan detection (warning).** Goals not reachable from any top-level goal are flagged for review.
 8. **R8 — Conflict detection (warning).** Two goals sharing an owner, deadline window, and resource constraint may be flagged for resource conflict review.
+9. **R9 — Metric reference coherence.** A criterion with a `metric` reference is resolved against the local pointer registry (`schema/metric-registry.json`). Once resolved, its `target` operator must be coherent with the record's directionality (`higher_is_better` → `>=`/`>`/`==`, `lower_is_better` → `<=`/`<`/`==`, `target_band` → `band`, `categorical` → `==`) and its `unit` must match the record's unit — violations are errors. Unresolvable references (unknown catalog or record, since the full catalog is remote), pinned-version mismatches, a `target` without a `metric`, and an `automated` criterion with a `metric` but no `target` are warnings.
 
 ## 7. Positioning relative to prior art
 
@@ -70,7 +71,7 @@ These are the rules the reference tooling (planned) will enforce:
 
 ## 8. Versioning
 
-The metamodel is versioned semantically. v0.1 is intentionally minimal (the entities above). Backwards-compatible additions (new optional fields, new enum values) bump the minor version; breaking changes bump the major. The schema file carries the authoritative version in `$id` and `properties.version`.
+The metamodel is versioned semantically. v0.1 is intentionally minimal (the entities above). Backwards-compatible additions (new optional fields, new enum values) bump the minor version; breaking changes bump the major. The schema file carries the authoritative version in `$id` and `properties.version`. v0.2.0 adds the optional `criterion.metric` / `criterion.target` fields, rule R9, and the pointer registry `schema/metric-registry.json`; instances declaring `schemaVersion: "0.1.0"` remain valid.
 
 ## 9. Roadmap beyond v0.1
 

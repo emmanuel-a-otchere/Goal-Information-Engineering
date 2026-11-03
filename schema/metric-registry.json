@@ -1,0 +1,70 @@
+{
+  "description": "Pointer registry of external performance-metric catalog records that GOAL criteria may reference via criterion.metric. Records are referenced by catalog+id+version, never copied; the source catalog remains the system of record.",
+  "source": {
+    "catalog": "dea-catalog-metrics",
+    "url": "https://github.com/technehub-labs/dea-catalog-metrics",
+    "entity": "dea:PerformanceMetric",
+    "metamodel": "dea-metamodel v0.2.1",
+    "license": "Apache-2.0",
+    "licenseUrl": "https://github.com/technehub-labs/dea-catalog-metrics/blob/main/LICENSE",
+    "fetchedAt": "2026-11-03",
+    "note": "Pointer metadata only (id, version, unit, directionality) for the catalog's admitted pilot cohort. This registry is not exhaustive: the catalog also holds candidate-lifecycle records. When a reference does not resolve here, verify it against the catalog's CATALOG.yaml. Refresh this file when the catalog's admitted set changes."
+  },
+  "records": [
+    {
+      "catalog": "dea-catalog-metrics",
+      "id": "dea:metric-customer-retention-rate",
+      "name": "Customer Retention Rate",
+      "abbreviation": "CRR",
+      "version": "1.2.0",
+      "lifecycle_status": "admitted",
+      "unit": "percent",
+      "unit_ref": "dea:unit-ratio-percent",
+      "directionality": "higher_is_better"
+    },
+    {
+      "catalog": "dea-catalog-metrics",
+      "id": "dea:metric-mean-time-to-recovery",
+      "name": "Mean Time to Recovery",
+      "abbreviation": "MTTR",
+      "version": "1.2.0",
+      "lifecycle_status": "admitted",
+      "unit": "minute",
+      "unit_ref": "dea:unit-minute",
+      "directionality": "lower_is_better"
+    },
+    {
+      "catalog": "dea-catalog-metrics",
+      "id": "dea:metric-operating-margin",
+      "name": "Operating Margin",
+      "abbreviation": "OM",
+      "version": "1.2.0",
+      "lifecycle_status": "admitted",
+      "unit": "percent",
+      "unit_ref": "dea:unit-ratio-percent",
+      "directionality": "higher_is_better"
+    },
+    {
+      "catalog": "dea-catalog-metrics",
+      "id": "dea:metric-data-completeness",
+      "name": "Data Completeness",
+      "abbreviation": "DC",
+      "version": "1.2.0",
+      "lifecycle_status": "admitted",
+      "unit": "percent",
+      "unit_ref": "dea:unit-ratio-percent",
+      "directionality": "higher_is_better"
+    },
+    {
+      "catalog": "dea-catalog-metrics",
+      "id": "dea:metric-control-effectiveness-rate",
+      "name": "Control Effectiveness Rate",
+      "abbreviation": "CER",
+      "version": "1.2.0",
+      "lifecycle_status": "admitted",
+      "unit": "percent",
+      "unit_ref": "dea:unit-ratio-percent",
+      "directionality": "higher_is_better"
+    }
+  ]
+}

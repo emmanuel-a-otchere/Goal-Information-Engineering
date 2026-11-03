@@ -1,4 +1,4 @@
-"""Design rules R1-R8 from docs/GOAL-METAMODEL.md.
+"""Design rules R1-R9 from docs/GOAL-METAMODEL.md.
 
 Each rule yields Issue objects. Errors block a model from being considered
 well-formed; warnings are advisory.
@@ -10,7 +10,7 @@ import datetime as _dt
 from dataclasses import dataclass
 from typing import List
 
-from .model import GoalModel, load_schema
+from .model import GoalModel, load_metric_registry, load_schema
 
 try:  # pragma: no cover - exercised via CLI/tests, import guard for packaging
     from jsonschema import Draft202012Validator
@@ -245,6 +245,115 @@ def check_r8_conflicts(model: GoalModel) -> List[Issue]:
     return issues
 
 
+# -- R9: metric reference resolution and coherence --------------------------
+
+# Operators that express a target compatible with each catalog directionality.
+_DIRECTIONALITY_OPERATORS = {
+    "higher_is_better": {"==", ">", ">="},
+    "lower_is_better": {"==", "<", "<="},
+    "target_band": {"band"},
+    "categorical": {"=="},
+}
+
+
+def check_r9_metric_references(model: GoalModel) -> List[Issue]:
+    """Criterion metric references must resolve and stay coherent with the record.
+
+    Resolution is against the local pointer registry (schema/metric-registry.json).
+    Unknown catalogs or record ids only warn, because the full catalog is remote
+    and the local registry is not exhaustive. Once a record resolves, a target
+    whose operator contradicts the record's directionality or whose unit differs
+    from the record's unit is an error: automated verification would be wrong.
+    """
+    issues: List[Issue] = []
+    registry = load_metric_registry()
+    records = {(r.get("catalog"), r.get("id")): r for r in registry.get("records", [])}
+    known_catalogs = {r.get("catalog") for r in registry.get("records", [])} | {
+        registry.get("source", {}).get("catalog")
+    }
+    known_catalogs.discard(None)
+
+    for g in model.goals.values():
+        for idx, c in enumerate(g.success_criteria):
+            ref = c.metric
+            if not ref:
+                if c.target:
+                    issues.append(
+                        Issue("R9", "warning", f"criterion {idx} sets a target without a metric reference", g.id)
+                    )
+                continue
+            catalog, mid = ref.get("catalog"), ref.get("id")
+            where = f"criterion {idx} of goal '{g.id}'"
+            rec = records.get((catalog, mid))
+            if rec is None:
+                if catalog in known_catalogs:
+                    issues.append(
+                        Issue(
+                            "R9",
+                            "warning",
+                            f"{where}: metric '{mid}' not in the local pointer registry for catalog "
+                            f"'{catalog}'; verify against the catalog's registry",
+                            g.id,
+                        )
+                    )
+                else:
+                    issues.append(
+                        Issue(
+                            "R9",
+                            "warning",
+                            f"{where}: unknown metric catalog '{catalog}'; cannot verify the reference offline",
+                            g.id,
+                        )
+                    )
+                continue
+            if ref.get("version") and rec.get("version") and ref["version"] != rec["version"]:
+                issues.append(
+                    Issue(
+                        "R9",
+                        "warning",
+                        f"{where}: pinned version {ref['version']} differs from the locally known "
+                        f"{rec['version']} for '{mid}'",
+                        g.id,
+                    )
+                )
+            target = c.target
+            if target:
+                op = target.get("operator")
+                allowed = _DIRECTIONALITY_OPERATORS.get(rec.get("directionality"))
+                if allowed is not None and op not in allowed:
+                    issues.append(
+                        Issue(
+                            "R9",
+                            "error",
+                            f"{where}: operator '{op}' contradicts directionality "
+                            f"'{rec.get('directionality')}' of '{mid}' (allowed: {sorted(allowed)})",
+                            g.id,
+                        )
+                    )
+                rec_unit, t_unit = rec.get("unit"), target.get("unit")
+                if rec_unit and t_unit and str(t_unit).lower() != str(rec_unit).lower():
+                    issues.append(
+                        Issue(
+                            "R9",
+                            "error",
+                            f"{where}: target unit '{t_unit}' does not match metric unit "
+                            f"'{rec_unit}' of '{mid}'",
+                            g.id,
+                        )
+                    )
+            if c.verification == "automated" and not target:
+                issues.append(
+                    Issue(
+                        "R9",
+                        "warning",
+                        f"{where}: automated criterion references metric '{mid}' but sets no "
+                        "target; add one for machine-checkable satisfaction",
+                        g.id,
+                    )
+                )
+    return issues
+
+
 CHECKS = [
     ("schema", validate_schema),
     ("R1", check_r1_unique_ids),
@@ -255,6 +364,7 @@ CHECKS = [
     ("R6", check_r6_deadlines),
     ("R7", check_r7_orphans),
     ("R8", check_r8_conflicts),
+    ("R9", check_r9_metric_references),
 ]
 
 

@@ -5,7 +5,7 @@
  * changes, update these types in the same commit and bump the version
  * below. Breaking type changes bump the major version.
  *
- * @version 0.1.0 (mirrors schema/goal.schema.json)
+ * @version 0.2.0 (mirrors schema/goal.schema.json)
  */
 
 export type AgentType = "human" | "team" | "organization" | "system";
@@ -13,6 +13,7 @@ export type GoalPriority = "critical" | "high" | "medium" | "low";
 export type GoalStatus = "proposed" | "active" | "achieved" | "abandoned";
 export type Refinement = "and" | "or";
 export type Verification = "manual" | "automated";
+export type TargetOperator = "<" | "<=" | ">" | ">=" | "==" | "band";
 export type ConstraintKind = "budget" | "time" | "resource" | "policy" | "other";
 
 export interface Agent {
@@ -29,11 +30,33 @@ export interface State {
   isCurrent?: boolean;
 }
 
+/** Reference to a canonical performance-metric record (e.g. dea-catalog-metrics). Referenced, never copied. */
+export interface MetricReference {
+  /** Catalog name, e.g. "dea-catalog-metrics". */
+  catalog: string;
+  /** Metric record id, e.g. "dea:metric-customer-retention-rate". */
+  id: string;
+  /** Pinned record version (semver). */
+  version: string;
+}
+
+/** Goal-specific target value for the referenced metric (rule R9 checks coherence). */
+export interface CriterionTarget {
+  operator: TargetOperator;
+  /** Numeric threshold, categorical value, or [low, high] pair when operator is "band". */
+  value: number | string | number[];
+  /** Must match the referenced metric record's unit. */
+  unit?: string;
+}
+
 export interface Criterion {
   description: string;
   /** Where or how to check this criterion. */
   evidence?: string;
   verification?: Verification;
+  metric?: MetricReference;
+  /** Requires metric (schema-enforced). */
+  target?: CriterionTarget;
 }
 
 export interface Constraint {

@@ -4,7 +4,7 @@ Thanks for your interest! This project builds a machine-native model for goals �
 
 ## Ground rules
 
-1. **Metamodel changes are design decisions.** Schema and type changes go through a discussion issue first. Changes must respect the design rules (R1–R8) in [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) and the versioning policy (§8): additive optional fields bump the minor version; breaking changes bump the major and need a migration note.
+1. **Metamodel changes are design decisions.** Schema and type changes go through a discussion issue first. Changes must respect the design rules (R1–R9) in [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) and the versioning policy (§8): additive optional fields bump the minor version; breaking changes bump the major and need a migration note.
 2. **Adapters stay out of the core.** Integrations with external systems implement the `Sink`/`Source` protocols in `src/goal_model/adapters.py` and must not require schema changes.
 3. **No network calls in tests.** Anything needing an LLM or external API takes an injected callable/connection.
 

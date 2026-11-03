@@ -18,7 +18,7 @@ MINIMAL_MODEL = {
     "id": "my-goal-model",
     "name": "My Goal Model",
     "version": "0.1.0",
-    "schemaVersion": "0.1.0",
+    "schemaVersion": "0.2.0",
     "description": "A new GOAL model. Edit me!",
     "agents": [{"id": "me", "name": "Me", "type": "human"}],
     "goals": [
@@ -175,7 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--force", action="store_true", help="overwrite existing file")
     p_init.set_defaults(func=cmd_init)
 
-    p_val = sub.add_parser("validate", help="validate a model (schema + rules R1-R8)")
+    p_val = sub.add_parser("validate", help="validate a model (schema + rules R1-R9)")
     p_val.add_argument("file")
     p_val.add_argument("-q", "--quiet", action="store_true")
     p_val.set_defaults(func=cmd_validate)
