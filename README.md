@@ -18,6 +18,8 @@ All four roadmap phases have first working versions:
 
 > A **Goal** is a statement of a **desired state of the world**, owned by an agent, bounded by conditions of satisfaction, and reachable from a current state through a (possibly implicit) plan.
 
+Note that the use of the term "agent" in asserting "what a goal is", is not constrained to only an AI Agent. Agent in this definition is compatible with Russell and Norvig (1995), who define an agent as “anything that can be viewed as perceiving its environment through sensors and acting upon that environment through effectors.” Our use in the definition of a goal is also compatible with Simon Willison’s, who writes that an agent is a system that “runs tools in a loop to achieve a goal.”. This definition and work published by [Emmanuel A. Otchere](https://nuel.otchere.com) information model for goal in [TM Forum](https://www.tmforum.org/resources/technical-specification/ig1220a-goal-conceptual-information-data-model-v2-0-0/))  
+
 Consequences: goals are state-based (not action-based), ownership is mandatory, and success must be checkable. See the [metamodel doc](docs/GOAL-METAMODEL.md) for the full ontology — refinement (AND/OR), obstacles, constraints, dependencies, and the goal lifecycle.
 
 ## Quick start
