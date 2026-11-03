@@ -12,7 +12,7 @@ All four roadmap phases have first working versions:
 - **Automation** — a reference Python library and CLI: schema + rules validation, tree reports, and pursuit planning. `pip install -e .` → `goal` command.
 - **Intelligence** — decomposition (`TemplateDecomposer` for deterministic, `LLMDecomposer` for LLM-assisted via an injected callable) and a `Planner` (state gaps, ready/blocked pursuit order, progress).
 - **Ecosystem** — TypeScript type bindings ([`bindings/typescript/`](bindings/typescript/)), a Sink/Source adapter framework with CSV export, and CI (Python 3.9 + 3.12).
-- [`examples/`](examples/) — a business OKR and a personal fitness goal, both fully valid instances used in CI.
+- **Operations** — an executable runtime layer (see [`docs/OPERATIONS.md`](docs/OPERATIONS.md)): an agent registry where each agent declares an interface for accepting well-defined goals, goal ingestion with validated acceptance tickets, a telemetry log of goal-realizing activities, a standard + goal-type-pluggable assessment framework, and a dashboard (CLI + loopback REST API with HTML view) for monitoring activities, performance, and adherence.
 
 ## What a goal is here
 
@@ -62,13 +62,25 @@ goal export examples/fitness-goal.json -o goals.csv
 goal init my-goal-model.json               # starter model
 ```
 
+Administer agents and run goal operations (loopback dashboard included):
+
+```bash
+goal agent register --store .goal-ops --id agent-runner --name "The Runner" --type human --goal-type fitness
+goal accept examples/fitness-goal.json --store .goal-ops --agent agent-runner --goal goal-base
+goal event examples/fitness-goal.json --store .goal-ops --agent agent-runner --goal goal-base --action "long run"
+goal assess examples/fitness-goal.json --store .goal-ops --goal goal-base --evidence "0=app export wk1-4"
+goal dashboard examples/fitness-goal.json --store .goal-ops   # text dashboard; --json for the metrics API
+goal serve examples/fitness-goal.json --store .goal-ops       # http://127.0.0.1:8377/ (loopback only)
+```
+
 ## Roadmap
 
 - **Phase 1 — Definition** ✅ metamodel, JSON Schema, worked examples.
 - **Phase 2 — Automation** ✅ reference Python library and CLI (`validate/lint/report/tree/init/export`) implementing design rules R1–R8.
 - **Phase 3 — Intelligence** ✅ deterministic and LLM-assisted decomposition, pursuit planner with state gaps and progress.
 - **Phase 4 — Ecosystem** ✅ TypeScript bindings, Sink/Source adapter framework, CI, contributing guide.
-- **Next:** evidence objects with timestamps (verification audit trail), recurring goals, executable criteria (URLs to checkable assertions), real adapters (GitHub Issues, Linear, OKR tools), and packaging the library to PyPI.
+- **Phase 5 — Operations** ✅ agent registry with declared goal interfaces, goal ingestion, telemetry, assessment framework (standard + typed assessors), CLI dashboard, loopback REST API + HTML dashboard (`docs/OPERATIONS.md`).
+- **Next:** real adapters feeding telemetry from external systems (GitHub Issues, Linear, OKR tools, CI), auth on the ops API for shared hosts, recurring goals, executable criteria (URLs to checkable assertions), and packaging the library to PyPI.
 
 ## Positioning
 
