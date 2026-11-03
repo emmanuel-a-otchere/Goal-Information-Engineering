@@ -2,7 +2,7 @@
   "id": "example-business-okr",
   "name": "Q4 Product Growth OKR",
   "version": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "description": "A business OKR expressed as a GOAL model: reduce churn through product reliability and customer success.",
   "agents": [
     { "id": "agent-cpo", "name": "Chief Product Officer", "type": "human" },
@@ -27,9 +27,15 @@
       "targetState": "state-target-q4",
       "successCriteria": [
         {
-          "description": "Churn dashboard reports monthly churn <= 2.5% for the final month of Q4.",
+          "description": "Monthly customer retention is at least 97.5% for the final month of Q4 (equivalent to churn <= 2.5%).",
           "evidence": "https://metrics.internal/churn?window=monthly",
-          "verification": "automated"
+          "verification": "automated",
+          "metric": {
+            "catalog": "dea-catalog-metrics",
+            "id": "dea:metric-customer-retention-rate",
+            "version": "1.2.0"
+          },
+          "target": { "operator": ">=", "value": 97.5, "unit": "percent" }
         }
       ],
       "priority": "critical",

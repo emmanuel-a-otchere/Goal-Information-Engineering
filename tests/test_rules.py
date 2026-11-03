@@ -14,6 +14,7 @@ from goal_model.rules import (
     check_r6_deadlines,
     check_r7_orphans,
     check_r8_conflicts,
+    check_r9_metric_references,
 )
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
@@ -205,6 +206,133 @@ def test_r8_no_conflict_without_shared_deadline():
     raw["goals"][0].update({"deadline": "2026-01-31", "constraints": ["c1"]})
     raw["goals"][1].update({"deadline": "2026-03-31", "constraints": ["c1"]})
     assert check_r8_conflicts(load_dict(raw)) == []
+
+
+# -- R9 -------------------------------------------------------------------
+
+CRR_REF = {
+    "catalog": "dea-catalog-metrics",
+    "id": "dea:metric-customer-retention-rate",
+    "version": "1.2.0",
+}
+
+MTTR_REF = {
+    "catalog": "dea-catalog-metrics",
+    "id": "dea:metric-mean-time-to-recovery",
+    "version": "1.2.0",
+}
+
+
+def with_criterion(criterion):
+    raw = copy.deepcopy(BASE)
+    raw["goals"][1]["successCriteria"] = [criterion]
+    return load_dict(raw)
+
+
+def test_r9_ok_without_metric_references():
+    assert check_r9_metric_references(base()) == []
+
+
+def test_r9_coherent_metric_reference_passes():
+    model = with_criterion(
+        {
+            "description": "Retention >= 97.5%",
+            "verification": "automated",
+            "metric": dict(CRR_REF),
+            "target": {"operator": ">=", "value": 97.5, "unit": "percent"},
+        }
+    )
+    assert check_r9_metric_references(model) == []
+
+
+def test_r9_lower_is_better_metric_accepts_le():
+    model = with_criterion(
+        {
+            "description": "MTTR <= 30 minutes",
+            "metric": dict(MTTR_REF),
+            "target": {"operator": "<=", "value": 30, "unit": "minute"},
+        }
+    )
+    assert check_r9_metric_references(model) == []
+
+
+def test_r9_directionality_mismatch_is_error():
+    model = with_criterion(
+        {
+            "description": "Retention <= 97.5%",
+            "metric": dict(CRR_REF),
+            "target": {"operator": "<=", "value": 97.5, "unit": "percent"},
+        }
+    )
+    issues = check_r9_metric_references(model)
+    assert any(i.severity == "error" and "directionality" in i.message for i in issues)
+
+
+def test_r9_unit_mismatch_is_error():
+    model = with_criterion(
+        {
+            "description": "Retention >= 0.975",
+            "metric": dict(CRR_REF),
+            "target": {"operator": ">=", "value": 0.975, "unit": "ratio"},
+        }
+    )
+    issues = check_r9_metric_references(model)
+    assert any(i.severity == "error" and "unit" in i.message for i in issues)
+
+
+def test_r9_unknown_metric_id_in_known_catalog_warns():
+    model = with_criterion(
+        {
+            "description": "Something measurable",
+            "metric": {"catalog": "dea-catalog-metrics", "id": "dea:metric-no-such", "version": "1.0.0"},
+            "target": {"operator": ">=", "value": 1},
+        }
+    )
+    issues = check_r9_metric_references(model)
+    assert len(issues) == 1 and issues[0].severity == "warning"
+
+
+def test_r9_unknown_catalog_warns():
+    model = with_criterion(
+        {
+            "description": "Something measurable",
+            "metric": {"catalog": "other-catalog", "id": "m1", "version": "1.0.0"},
+        }
+    )
+    issues = check_r9_metric_references(model)
+    assert len(issues) == 1 and issues[0].severity == "warning" and "unknown metric catalog" in issues[0].message
+
+
+def test_r9_target_without_metric_warns():
+    model = with_criterion({"description": "x", "target": {"operator": ">=", "value": 1}})
+    issues = check_r9_metric_references(model)
+    assert len(issues) == 1 and issues[0].severity == "warning"
+
+
+def test_r9_automated_metric_without_target_warns():
+    model = with_criterion(
+        {"description": "x", "verification": "automated", "metric": dict(CRR_REF)}
+    )
+    issues = check_r9_metric_references(model)
+    assert any(i.severity == "warning" and "no target" in i.message for i in issues)
+
+
+def test_r9_pinned_version_mismatch_warns_but_stays_coherent():
+    model = with_criterion(
+        {
+            "description": "Retention >= 97.5%",
+            "metric": {**CRR_REF, "version": "9.9.9"},
+            "target": {"operator": ">=", "value": 97.5, "unit": "percent"},
+        }
+    )
+    issues = check_r9_metric_references(model)
+    assert len(issues) == 1 and issues[0].severity == "warning" and "9.9.9" in issues[0].message
+
+
+def test_schema_requires_metric_when_target_present():
+    model = with_criterion({"description": "x", "target": {"operator": ">=", "value": 1}})
+    codes = {i.rule for i in find_issues(model)}
+    assert "schema" in codes
 
 
 # -- find_issues / check_model --------------------------------------------

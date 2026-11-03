@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 SCHEMA_PATH = Path(__file__).resolve().parent.parent.parent / "schema" / "goal.schema.json"
+METRIC_REGISTRY_PATH = Path(__file__).resolve().parent.parent.parent / "schema" / "metric-registry.json"
 
 
 @dataclass
@@ -30,6 +31,8 @@ class Criterion:
     description: str
     evidence: Optional[str] = None
     verification: str = "manual"
+    metric: Optional[Dict[str, Any]] = None
+    target: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -105,6 +108,8 @@ class GoalModel:
                         description=c["description"],
                         evidence=c.get("evidence"),
                         verification=c.get("verification", "manual"),
+                        metric=c.get("metric"),
+                        target=c.get("target"),
                     )
                     for c in g.get("successCriteria", [])
                 ],
@@ -156,6 +161,12 @@ class GoalModel:
 
 def load_schema() -> Dict[str, Any]:
     with open(SCHEMA_PATH, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def load_metric_registry() -> Dict[str, Any]:
+    """Pointer registry of external metric-catalog records (schema/metric-registry.json)."""
+    with open(METRIC_REGISTRY_PATH, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
 

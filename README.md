@@ -8,7 +8,7 @@ As AI takes center stage, goal-oriented modeling is the key to software that can
 
 All four roadmap phases have first working versions:
 
-- **Definition** — [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) (metamodel v0.1: entities, relationships, lifecycle, design rules R1–R8) and [`schema/goal.schema.json`](schema/goal.schema.json) (the authoritative JSON Schema).
+- **Definition** — [`docs/GOAL-METAMODEL.md`](docs/GOAL-METAMODEL.md) (metamodel v0.2: entities, relationships, lifecycle, design rules R1–R9) and [`schema/goal.schema.json`](schema/goal.schema.json) (the authoritative JSON Schema).
 - **Automation** — a reference Python library and CLI: schema + rules validation, tree reports, and pursuit planning. `pip install -e .` → `goal` command.
 - **Intelligence** — decomposition (`TemplateDecomposer` for deterministic, `LLMDecomposer` for LLM-assisted via an injected callable) and a `Planner` (state gaps, ready/blocked pursuit order, progress).
 - **Ecosystem** — TypeScript type bindings ([`bindings/typescript/`](bindings/typescript/)), a Sink/Source adapter framework with CSV export, and CI (Python 3.9 + 3.12).
@@ -52,7 +52,7 @@ Validate any instance against the schema with the CLI:
 
 ```bash
 pip install -e .            # installs the `goal` command and library
-goal validate examples/business-okr.json   # schema + rules R1-R8
+goal validate examples/business-okr.json   # schema + rules R1-R9
 goal lint examples/business-okr.json        # includes warnings, --strict to fail on them
 goal tree examples/fitness-goal.json        # refinement forest
 goal plan examples/fitness-goal.json        # ready/blocked pursuit order + progress
@@ -65,7 +65,7 @@ goal init my-goal-model.json               # starter model
 ## Roadmap
 
 - **Phase 1 — Definition** ✅ metamodel, JSON Schema, worked examples.
-- **Phase 2 — Automation** ✅ reference Python library and CLI (`validate/lint/report/tree/init/export`) implementing design rules R1–R8.
+- **Phase 2 — Automation** ✅ reference Python library and CLI (`validate/lint/report/tree/init/export`) implementing design rules R1–R9.
 - **Phase 3 — Intelligence** ✅ deterministic and LLM-assisted decomposition, pursuit planner with state gaps and progress.
 - **Phase 4 — Ecosystem** ✅ TypeScript bindings, Sink/Source adapter framework, CI, contributing guide.
 - **Next:** evidence objects with timestamps (verification audit trail), recurring goals, executable criteria (URLs to checkable assertions), real adapters (GitHub Issues, Linear, OKR tools), and packaging the library to PyPI.
